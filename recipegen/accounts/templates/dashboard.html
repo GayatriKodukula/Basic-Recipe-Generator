@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard – RecipeGen{% endblock %}
+
+{% block extra_css %}
+.food-bg {
+    min-height: 100vh;
+    background: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&q=80') center/cover no-repeat fixed;
+    padding: 36px 28px 50px;
+    position: relative;
+}
+.food-bg::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,.13); }
+.food-bg > * { position:relative; z-index:1; }
+
+.page-title {
+    text-align:center; font-size:2rem; font-weight:700; color:#fff;
+    text-shadow:0 2px 8px rgba(0,0,0,.45); margin-bottom:4px;
+}
+.welcome-msg { color:rgba(255,255,255,.9); font-size:.95rem; margin-bottom:2px; }
+.section-label { color:#fff; font-size:1.1rem; font-weight:700; margin:20px 0 14px;
+    text-shadow:0 1px 4px rgba(0,0,0,.5); }
+
+/* ── Filter bar ── */
+.filter-bar {
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    background:rgba(255,255,255,.18); backdrop-filter:blur(6px);
+    border-radius:14px; padding:14px 18px; margin-bottom:22px;
+}
+.filter-bar label { color:#fff; font-size:.82rem; font-weight:600; margin-bottom:0; }
+.filter-pill {
+    background:rgba(255,255,255,.85); border:2px solid transparent;
+    border-radius:20px; padding:5px 16px; font-size:.82rem; font-weight:600;
+    cursor:pointer; transition:.15s; color:#444; white-space:nowrap;
+}
+.filter-pill.active { background:#fff; border-color:#7b2d8b; color:#7b2d8b; }
+.filter-pill:hover { background:#fff; }
+.divider { width:1px; height:28px; background:rgba(255,255,255,.35); }
+
+/* Match mode toggle */
+.toggle-wrap { display:flex; align-items:center; gap:8px; }
+.toggle-wrap label { color:#fff; font-size:.82rem; font-weight:600; margin:0; }
+.form-check-input:checked { background-color:#7b2d8b; border-color:#7b2d8b; }
+
+/* ML badge */
+.ml-badge {
+    background:linear-gradient(135deg,#7b2d8b,#e63946);
+    color:#fff; border-radius:20px; padding:5px 16px;
+    font-size:.8rem; font-weight:700; cursor:pointer;
+    border:none; transition:.15s;
+}
+.ml-badge.active { box-shadow:0 0 0 3px rgba(255,255,255,.5); }
+
+/* ── Category grid ── */
+.cat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:14px; }
+.cat-grid-2 { grid-template-columns:repeat(3,1fr); max-width:76%; }
+.cat-card {
+    background:rgba(255,255,255,.92); border-radius:16px; padding:22px 14px;
+    text-align:center; cursor:pointer;
+    transition:transform .2s, box-shadow .2s, border-color .2s;
+    border:2px solid transparent;
+}
+.cat-card:hover { transform:translateY(-4px); box-shadow:0 8px 22px rgba(0,0,0,.18); }
+.cat-card.selected { border-color:#7b2d8b; background:#fff; box-shadow:0 4px 16px rgba(123,45,139,.25); }
+.cat-card .emoji { font-size:2.1rem; display:block; margin-bottom:7px; }
+.cat-card .cat-lbl { color:#7b2d8b; font-weight:600; font-size:.87rem; }
+.cat-card .cat-lbl i { font-size:.72rem; margin-right:3px; }
+
+/* ── Ingredient panel ── */
+.ing-panel {
+    background:rgba(255,255,255,.96); border-radius:14px; padding:18px 20px;
+    margin-top:14px; display:none;
+    animation:slideDown .22s ease;
+}
+.ing-panel.open { display:block; }
+@keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+.ing-panel h6 { font-size:.9rem; font-weight:700; color:#333; margin-bottom:12px; }
+.chip-wrap { display:flex; flex-wrap:wrap; gap:7px; }
+.chip {
+    display:flex; align-items:center; gap:5px;
+    background:#f5f0f7; border:1.5px solid #d9c6e0;
+    border-radius:20px; padding:4px 13px;
+    font-size:.8rem; font-weight:500; color:#555; cursor:pointer; transition:.15s;
+}
+.chip input { display:none; }
+.chip.on { background:#7b2d8b; border-color:#7b2d8b; color:#fff; }
+
+/* ── Generate button ── */
+.gen-wrap { text-align:center; margin-top:28px; }
+.btn-gen {
+    background:#2e7d32; color:#fff; border:none; border-radius:50px;
+    padding:14px 48px; font-size:1rem; font-weight:700;
+    font-family:'Poppins',sans-serif; cursor:pointer;
+    transition:background .2s, transform .15s, box-shadow .2s;
+    box-shadow:0 4px 16px rgba(46,125,50,.35);
+    display:inline-flex; align-items:center; gap:10px;
+}
+.btn-gen:hover { background:#1b5e20; transform:translateY(-2px); }
+.btn-gen:disabled { background:#888; cursor:not-allowed; transform:none; }
+
+/* ── Collab section ── */
+.collab-section { margin-top:32px; }
+.collab-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
+.collab-card {
+    background:rgba(255,255,255,.9); border-radius:14px; padding:18px;
+    box-shadow:0 3px 12px rgba(0,0,0,.1);
+}
+.collab-card h6 { font-size:.92rem; font-weight:700; color:#222; margin-bottom:5px; }
+.collab-card p { font-size:.78rem; color:#555; margin:0; }
+.collab-badge {
+    display:inline-block; background:#7b2d8b; color:#fff;
+    font-size:.68rem; font-weight:700; border-radius:20px; padding:2px 10px; margin-bottom:6px;
+}
+{% endblock %}
+
+{% block content %}
+<div class="food-bg">
+    <p class="page-title">Recipe Generator</p>
+    <p class="welcome-msg">Welcome, <strong>{{ request.user.username }}</strong></p>
+    <p class="welcome-msg" style="margin-bottom:20px;">Start generating delicious recipes!</p>
+
+    <form method="POST" action="{% url 'recommend' %}" id="recipeForm">
+        {% csrf_token %}
+
+        <!-- ── Filter bar ── -->
+        <div class="filter-bar">
+            <!-- Diet -->
+            <label>Diet:</label>
+            <span class="filter-pill active" data-group="diet" data-val="all" onclick="setPill(this,'diet')">All</span>
+            <span class="filter-pill" data-group="diet" data-val="veg" onclick="setPill(this,'diet')">🥦 Veg</span>
+            <span class="filter-pill" data-group="diet" data-val="nonveg" onclick="setPill(this,'diet')">🍖 Non-Veg</span>
+            <input type="hidden" name="diet" id="dietInput" value="all">
+
+            <div class="divider"></div>
+
+            <!-- Difficulty -->
+            <label>Difficulty:</label>
+            <span class="filter-pill active" data-group="diff" data-val="all" onclick="setPill(this,'diff')">All</span>
+            <span class="filter-pill" data-group="diff" data-val="easy" onclick="setPill(this,'diff')">Easy</span>
+            <span class="filter-pill" data-group="diff" data-val="medium" onclick="setPill(this,'diff')">Medium</span>
+            <span class="filter-pill" data-group="diff" data-val="hard" onclick="setPill(this,'diff')">Hard</span>
+            <input type="hidden" name="difficulty" id="diffInput" value="all">
+
+            <div class="divider"></div>
+
+            <!-- Match mode -->
+            <div class="toggle-wrap">
+                <label>Flexible match</label>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="flexToggle"
+                           onchange="document.getElementById('matchInput').value = this.checked ? 'flexible' : 'strict'">
+                </div>
+            </div>
+            <input type="hidden" name="match_mode" id="matchInput" value="strict">
+
+            <div class="divider"></div>
+
+            <!-- ML toggle -->
+            <button type="button" class="ml-badge" id="mlBtn"
+                    onclick="toggleML(this)">🤖 Use ML</button>
+            <input type="hidden" name="use_ml" id="mlInput" value="false">
+        </div>
+
+        <!-- ── Categories row 1 ── -->
+        <p class="section-label">Categories</p>
+        <div class="cat-grid">
+            {% for cat, ings in categories.items %}
+            {% if forloop.counter <= 4 %}
+            <div class="cat-card" onclick="toggleCat(this,'{{ cat }}')">
+                <span class="emoji">
+                    {% if cat == 'Vegetables' %}🥦{% elif cat == 'Fruits' %}🍎
+                    {% elif cat == 'Spices' %}🌶️{% elif cat == 'Meat' %}🍖
+                    {% else %}🌾{% endif %}
+                </span>
+                <div class="cat-lbl"><i class="fas fa-play"></i> {{ cat }}</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- ── Categories row 2 ── -->
+        <div class="cat-grid cat-grid-2">
+            {% for cat, ings in categories.items %}
+            {% if forloop.counter > 4 %}
+            <div class="cat-card" onclick="toggleCat(this,'{{ cat }}')">
+                <span class="emoji">
+                    {% if cat == 'Grains' %}🌾{% elif cat == 'Dairy' %}🥛{% else %}🍫{% endif %}
+                </span>
+                <div class="cat-lbl"><i class="fas fa-play"></i> {{ cat }}</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- ── Ingredient panel ── -->
+        <div class="ing-panel" id="ingPanel">
+            <h6 id="panelTitle">Select Ingredients</h6>
+            <div class="chip-wrap" id="chipWrap"></div>
+        </div>
+
+        <!-- ── Generate button ── -->
+        <div class="gen-wrap">
+            <button type="submit" class="btn-gen" id="genBtn">
+                Generate Recipes <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </form>
+
+    <!-- ── Collaborative recommendations ── -->
+    {% if collab_recipes %}
+    <div class="collab-section">
+        <p class="section-label">✨ Based on What Others Like You Saved</p>
+        <div class="collab-grid">
+            {% for r in collab_recipes %}
+            <div class="collab-card">
+                <span class="collab-badge">{% if r.is_veg %}🥦 Veg{% else %}🍖 Non-Veg{% endif %}</span>
+                <h6>{{ r.name }}</h6>
+                <p>{{ r.ingredients|truncatechars:80 }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const categories = {
+    {% for cat, ings in categories.items %}
+    "{{ cat }}": [{% for i in ings %}"{{ i }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+    {% endfor %}
+};
+
+let activeCat = null;
+
+function toggleCat(card, name) {
+    const panel = document.getElementById('ingPanel');
+    const wrap  = document.getElementById('chipWrap');
+    const title = document.getElementById('panelTitle');
+
+    document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+
+    if (activeCat === name) {
+        activeCat = null;
+        panel.classList.remove('open');
+        return;
+    }
+    activeCat = name;
+    card.classList.add('selected');
+    title.textContent = name + ' — pick ingredients';
+    wrap.innerHTML = '';
+
+    (categories[name] || []).forEach(ing => {
+        const lbl = document.createElement('label');
+        lbl.className = 'chip';
+        lbl.innerHTML = `<input type="checkbox" name="ingredients" value="${ing}"> ${ing}`;
+        lbl.querySelector('input').addEventListener('change', function() {
+            lbl.classList.toggle('on', this.checked);
+            updateGenBtn();
+        });
+        wrap.appendChild(lbl);
+    });
+    panel.classList.add('open');
+}
+
+function setPill(el, group) {
+    document.querySelectorAll(`.filter-pill[data-group="${group}"]`)
+            .forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    if (group === 'diet') document.getElementById('dietInput').value = el.dataset.val;
+    else document.getElementById('diffInput').value = el.dataset.val;
+}
+
+function toggleML(btn) {
+    const on = btn.classList.toggle('active');
+    document.getElementById('mlInput').value = on ? 'true' : 'false';
+    btn.textContent = on ? '🤖 ML ON' : '🤖 Use ML';
+}
+
+function updateGenBtn() {
+    const checked = document.querySelectorAll('input[name="ingredients"]:checked').length;
+    const btn = document.getElementById('genBtn');
+    btn.disabled = checked === 0;
+    btn.textContent = checked > 0
+        ? `Generate Recipes (${checked} selected) 🔍`
+        : 'Generate Recipes 🔍';
+}
+
+// Init: disable button until ingredients selected
+document.addEventListener('DOMContentLoaded', updateGenBtn);
+</script>
+{% endblock %}

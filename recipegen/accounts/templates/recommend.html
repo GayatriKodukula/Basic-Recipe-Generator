@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}Recommended Recipes – RecipeGen{% endblock %}
+
+{% block extra_css %}
+.rec-bg {
+    min-height:100vh;
+    background:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&q=80') center/cover no-repeat fixed;
+    padding:36px 28px 50px; position:relative;
+}
+.rec-bg::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,.13); }
+.rec-bg > * { position:relative; z-index:1; }
+
+.page-title {
+    text-align:center; font-size:1.85rem; font-weight:700; color:#fff;
+    text-shadow:0 2px 8px rgba(0,0,0,.5); margin-bottom:6px;
+}
+.filter-summary {
+    text-align:center; margin-bottom:24px; display:flex;
+    justify-content:center; flex-wrap:wrap; gap:8px;
+}
+.tag {
+    background:rgba(255,255,255,.22); backdrop-filter:blur(4px);
+    color:#fff; border-radius:20px; padding:4px 14px; font-size:.8rem; font-weight:600;
+}
+.tag.veg { background:rgba(46,125,50,.55); }
+.tag.nonveg { background:rgba(183,28,28,.55); }
+.tag.ml { background:rgba(123,45,139,.65); }
+
+.back-btn {
+    display:inline-flex; align-items:center; gap:7px;
+    background:rgba(255,255,255,.2); backdrop-filter:blur(4px);
+    color:#fff; border:1.5px solid rgba(255,255,255,.45);
+    border-radius:8px; padding:8px 20px; font-size:.88rem; font-weight:500;
+    margin-bottom:22px; transition:.2s;
+}
+.back-btn:hover { background:rgba(255,255,255,.3); color:#fff; }
+
+.recipes-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:18px; }
+
+.recipe-card {
+    background:rgba(255,255,255,.93); border-radius:14px; padding:22px 20px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    box-shadow:0 4px 16px rgba(0,0,0,.1);
+    transition:transform .2s, box-shadow .2s;
+    position:relative; overflow:hidden;
+}
+.recipe-card:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(0,0,0,.18); }
+.recipe-card h5 { font-size:1.05rem; font-weight:700; color:#222; margin-bottom:6px; }
+
+.diet-tag {
+    position:absolute; top:14px; right:14px;
+    font-size:.7rem; font-weight:700; border-radius:12px;
+    padding:3px 10px; color:#fff;
+}
+.diet-tag.veg  { background:#2e7d32; }
+.diet-tag.nonveg { background:#c62828; }
+
+.diff-tag {
+    display:inline-block; font-size:.72rem; font-weight:700;
+    border-radius:10px; padding:2px 10px; margin-bottom:8px; color:#fff;
+}
+.diff-tag.easy   { background:#388e3c; }
+.diff-tag.medium { background:#f57c00; }
+.diff-tag.hard   { background:#c62828; }
+
+.score-bar-wrap { margin-bottom:10px; }
+.score-label { font-size:.75rem; color:#666; font-weight:600; margin-bottom:3px; }
+.score-bar { height:5px; background:#e0e0e0; border-radius:3px; overflow:hidden; }
+.score-fill { height:100%; background:linear-gradient(90deg,#7b2d8b,#e63946); border-radius:3px; transition:width .6s ease; }
+
+.recipe-meta { font-size:.83rem; color:#444; margin-bottom:4px; }
+.recipe-meta strong { font-weight:600; }
+.steps-ol { padding-left:17px; margin-top:5px; }
+.steps-ol li { font-size:.8rem; color:#555; margin-bottom:2px; }
+
+.card-foot { display:flex; justify-content:flex-end; margin-top:14px; }
+.btn-use {
+    background:#2e7d32; color:#fff; border:none; border-radius:8px;
+    padding:8px 26px; font-size:.88rem; font-weight:700;
+    font-family:'Poppins',sans-serif; cursor:pointer; transition:.2s;
+}
+.btn-use:hover { background:#1b5e20; }
+.btn-use.saved { background:#888; cursor:default; }
+
+.empty-state {
+    text-align:center; color:#fff; padding:80px 20px;
+}
+.empty-state i { font-size:3.5rem; opacity:.7; margin-bottom:16px; display:block; }
+.empty-state h4 { font-size:1.35rem; margin-bottom:8px; }
+.empty-state p { opacity:.8; font-size:.9rem; }
+{% endblock %}
+
+{% block content %}
+<div class="rec-bg">
+    <a href="{% url 'dashboard' %}" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+
+    <h2 class="page-title">🍳 Recommended Recipes For You</h2>
+
+    <!-- Active filters summary -->
+    <div class="filter-summary">
+        {% if selected_ingredients %}
+        <span class="tag">🧂 {{ selected_ingredients|join:", " }}</span>
+        {% endif %}
+        {% if diet == 'veg' %}<span class="tag veg">🥦 Vegetarian</span>
+        {% elif diet == 'nonveg' %}<span class="tag nonveg">🍖 Non-Veg</span>{% endif %}
+        {% if difficulty != 'all' %}<span class="tag">⚡ {{ difficulty|capfirst }}</span>{% endif %}
+        {% if match_mode == 'flexible' %}<span class="tag">🔄 Flexible Match</span>{% endif %}
+        {% if use_ml %}<span class="tag ml">🤖 ML Powered</span>{% endif %}
+        <span class="tag">{{ recipes|length }} result{% if recipes|length != 1 %}s{% endif %}</span>
+    </div>
+
+    {% if recipes %}
+    <div class="recipes-grid">
+        {% for recipe in recipes %}
+        <div class="recipe-card" id="card-{{ forloop.counter }}">
+
+            <!-- Diet badge -->
+            {% if recipe.is_veg %}
+            <span class="diet-tag veg">🥦 Veg</span>
+            {% else %}
+            <span class="diet-tag nonveg">🍖 Non-Veg</span>
+            {% endif %}
+
+            <div>
+                <!-- Difficulty -->
+                <span class="diff-tag {{ recipe.difficulty_level }}">
+                    {{ recipe.difficulty_level|capfirst }}
+                </span>
+
+                <h5>{{ recipe.name }}</h5>
+
+                <!-- ML score bar -->
+                {% if recipe.score %}
+                <div class="score-bar-wrap">
+                    <div class="score-label">Match score: {{ recipe.score }}%</div>
+                    <div class="score-bar">
+                        <div class="score-fill" style="width:{{ recipe.score }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <p class="recipe-meta"><strong>Ingredients:</strong> {{ recipe.ingredients }}</p>
+                <p class="recipe-meta"><strong>Steps:</strong></p>
+                <ol class="steps-ol">
+                    {% for step in recipe.steps %}
+                    <li>{{ step }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+
+            <div class="card-foot">
+                <form method="POST" action="{% url 'save_recipe' %}" class="save-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="name" value="{{ recipe.name }}">
+                    <input type="hidden" name="ingredients" value="{{ recipe.ingredients }}">
+                    <input type="hidden" name="steps" value="{{ recipe.steps|join:'; ' }}">
+                    <input type="hidden" name="difficulty_level" value="{{ recipe.difficulty_level }}">
+                    <input type="hidden" name="is_veg" value="{{ recipe.is_veg|lower }}">
+                    <button type="submit" class="btn-use" id="use-{{ forloop.counter }}">Use</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-search"></i>
+        <h4>No recipes found</h4>
+        <p>Try <strong>Flexible match</strong>, different ingredients, or remove filters.</p>
+        <a href="{% url 'dashboard' %}" class="back-btn" style="margin-top:20px; display:inline-flex;">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

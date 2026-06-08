@@ -1,0 +1,26 @@
+/* RecipeGen – Global Stylesheet */
+:root {
+    --primary: #e63946;
+    --secondary: #2ec4b6;
+    --accent: #7b2d8b;
+    --success: #2e7d32;
+    --sidebar-width: 240px;
+    --font: 'Poppins', sans-serif;
+}
+
+body {
+    font-family: var(--font);
+    background: #f5f5f5;
+}
+
+a { text-decoration: none; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+/* Utility */
+.text-primary-custom { color: var(--primary) !important; }
+.bg-primary-custom { background: var(--primary) !important; }

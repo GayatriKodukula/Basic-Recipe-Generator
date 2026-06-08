@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% block title %}Recipe History – RecipeGen{% endblock %}
+
+{% block extra_css %}
+.hist-bg {
+    min-height:100vh;
+    background:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&q=80') center/cover no-repeat fixed;
+    padding:36px 28px 50px; position:relative;
+}
+.hist-bg::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,.13); }
+.hist-bg > * { position:relative; z-index:1; }
+
+.page-title {
+    text-align:center; font-size:1.9rem; font-weight:700; color:#fff;
+    text-shadow:0 2px 8px rgba(0,0,0,.45); margin-bottom:20px;
+}
+
+/* ── Search & filter bar ── */
+.hist-controls {
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    margin-bottom:22px;
+}
+.search-box {
+    flex:1; min-width:200px;
+    display:flex; align-items:center;
+    background:rgba(255,255,255,.93); border-radius:10px;
+    padding:8px 14px; gap:8px;
+}
+.search-box input {
+    border:none; background:transparent; flex:1;
+    font-family:'Poppins',sans-serif; font-size:.9rem; outline:none; color:#333;
+}
+.search-box button {
+    background:none; border:none; color:#7b2d8b; cursor:pointer; font-size:.95rem;
+}
+.filter-pill {
+    background:rgba(255,255,255,.85); border:2px solid transparent;
+    border-radius:20px; padding:5px 16px; font-size:.82rem; font-weight:600;
+    cursor:pointer; color:#444; text-decoration:none; transition:.15s;
+    white-space:nowrap;
+}
+.filter-pill.active { background:#fff; border-color:#7b2d8b; color:#7b2d8b; }
+.filter-pill:hover { background:#fff; color:#7b2d8b; }
+
+/* ── Cards grid ── */
+.hist-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+.hist-card {
+    background:rgba(255,255,255,.92); border-radius:14px; padding:20px 18px;
+    box-shadow:0 4px 14px rgba(0,0,0,.1);
+    transition:transform .2s, box-shadow .2s;
+    position:relative;
+}
+.hist-card:hover { transform:translateY(-3px); box-shadow:0 7px 22px rgba(0,0,0,.18); }
+
+.hist-card h5 { font-size:1rem; font-weight:700; color:#222; margin-bottom:6px; padding-right:60px; }
+.hist-card .meta { font-size:.82rem; color:#444; margin-bottom:3px; }
+.hist-card .meta strong { font-weight:600; }
+.steps-ol { padding-left:16px; margin-top:4px; max-height:120px; overflow:hidden; transition:max-height .3s; }
+.steps-ol.expanded { max-height:600px; }
+.steps-ol li { font-size:.78rem; color:#555; margin-bottom:1px; }
+.toggle-steps {
+    background:none; border:none; color:#7b2d8b; font-size:.78rem;
+    font-weight:600; cursor:pointer; padding:4px 0; font-family:'Poppins',sans-serif;
+}
+
+.saved-on { font-size:.75rem; font-weight:600; color:#777; margin-top:10px; }
+
+.card-badges { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+.diet-badge {
+    font-size:.68rem; font-weight:700; border-radius:10px;
+    padding:2px 9px; color:#fff;
+}
+.diet-badge.veg  { background:#2e7d32; }
+.diet-badge.nonveg { background:#c62828; }
+.diff-badge {
+    font-size:.68rem; font-weight:700; border-radius:10px;
+    padding:2px 9px; color:#fff;
+}
+.diff-badge.easy   { background:#388e3c; }
+.diff-badge.medium { background:#f57c00; }
+.diff-badge.hard   { background:#c62828; }
+
+/* ── Action buttons ── */
+.card-actions {
+    position:absolute; top:14px; right:14px;
+    display:flex; flex-direction:column; gap:6px;
+}
+.btn-fav, .btn-del {
+    width:30px; height:30px; border-radius:50%;
+    border:none; cursor:pointer; display:flex;
+    align-items:center; justify-content:center; font-size:.85rem;
+    transition:.2s;
+}
+.btn-fav { background:#fff8e1; color:#f9a825; box-shadow:0 2px 6px rgba(0,0,0,.12); }
+.btn-fav.active { background:#f9a825; color:#fff; }
+.btn-fav:hover { background:#f9a825; color:#fff; }
+.btn-del { background:#fce4ec; color:#c62828; box-shadow:0 2px 6px rgba(0,0,0,.1); }
+.btn-del:hover { background:#c62828; color:#fff; }
+
+.empty-state {
+    text-align:center; color:#fff; padding:80px 20px;
+}
+.empty-state i { font-size:3.5rem; opacity:.7; margin-bottom:16px; display:block; }
+.empty-state h4 { font-size:1.35rem; margin-bottom:8px; }
+.empty-state p { opacity:.8; }
+.empty-state a {
+    display:inline-flex; align-items:center; gap:8px;
+    background:#2ec4b6; color:#fff; border-radius:8px;
+    padding:10px 26px; font-weight:600; margin-top:18px; transition:.2s;
+}
+.empty-state a:hover { background:#22a89e; color:#fff; }
+{% endblock %}
+
+{% block content %}
+<div class="hist-bg">
+    <h2 class="page-title">📋 Your Recipe History</h2>
+
+    <!-- ── Controls ── -->
+    <form method="GET" action="{% url 'history' %}" class="hist-controls">
+        <div class="search-box">
+            <i class="fas fa-search" style="color:#999;"></i>
+            <input type="text" name="q" placeholder="Search recipes…" value="{{ query }}">
+            <button type="submit"><i class="fas fa-arrow-right"></i></button>
+        </div>
+        <a href="{% url 'history' %}?favorites=1{% if query %}&q={{ query }}{% endif %}"
+           class="filter-pill {% if fav_only %}active{% endif %}">
+            ⭐ Favourites only
+        </a>
+        <a href="{% url 'history' %}?diet=veg{% if query %}&q={{ query }}{% endif %}"
+           class="filter-pill {% if diet_filter == 'veg' %}active{% endif %}">🥦 Veg</a>
+        <a href="{% url 'history' %}?diet=nonveg{% if query %}&q={{ query }}{% endif %}"
+           class="filter-pill {% if diet_filter == 'nonveg' %}active{% endif %}">🍖 Non-Veg</a>
+        {% if query or fav_only or diet_filter != 'all' %}
+        <a href="{% url 'history' %}" class="filter-pill">✕ Clear</a>
+        {% endif %}
+    </form>
+
+    {% if recipes %}
+    <div class="hist-grid">
+        {% for recipe in recipes %}
+        <div class="hist-card" id="hcard-{{ recipe.pk }}">
+
+            <!-- action buttons -->
+            <div class="card-actions">
+                <button class="btn-fav {% if recipe.is_favorite %}active{% endif %}"
+                        onclick="toggleFav({{ recipe.pk }}, this)"
+                        title="{% if recipe.is_favorite %}Remove favourite{% else %}Add to favourites{% endif %}">
+                    <i class="fas fa-star"></i>
+                </button>
+                <button class="btn-del" onclick="deleteCard({{ recipe.pk }})" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+
+            <!-- badges -->
+            <div class="card-badges">
+                {% if recipe.is_veg %}
+                <span class="diet-badge veg">🥦 Veg</span>
+                {% else %}
+                <span class="diet-badge nonveg">🍖 Non-Veg</span>
+                {% endif %}
+                <span class="diff-badge {{ recipe.difficulty_level }}">
+                    {{ recipe.difficulty_level|capfirst }}
+                </span>
+                {% if recipe.is_favorite %}
+                <span style="font-size:.78rem; color:#f9a825; font-weight:700;">⭐ Favourite</span>
+                {% endif %}
+            </div>
+
+            <h5>{{ recipe.title }}</h5>
+            <p class="meta"><strong>Ingredients:</strong> {{ recipe.ingredients }}</p>
+            <p class="meta"><strong>Steps:</strong></p>
+            <ol class="steps-ol" id="steps-{{ recipe.pk }}">
+                {% for step in recipe.instructions.split %}
+                <li>{{ step }}</li>
+                {% endfor %}
+            </ol>
+            <button class="toggle-steps" onclick="toggleSteps({{ recipe.pk }}, this)">
+                Show more ▼
+            </button>
+            <p class="saved-on"><strong>Saved On:</strong> {{ recipe.created_at|date:"F j, Y, g:i a" }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-history"></i>
+        <h4>{% if query %}No recipes matching "{{ query }}"{% else %}No recipes saved yet{% endif %}</h4>
+        <p>Generate recipes and click "Use" to save them here.</p>
+        <a href="{% url 'dashboard' %}"><i class="fas fa-home"></i> Go to Dashboard</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+function toggleFav(pk, btn) {
+    fetch(`/history/favorite/${pk}/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'},
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.classList.toggle('active', data.is_favorite);
+        btn.title = data.is_favorite ? 'Remove favourite' : 'Add to favourites';
+    });
+}
+
+function deleteCard(pk) {
+    if (!confirm('Remove this recipe from history?')) return;
+    fetch(`/history/delete/${pk}/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrfToken},
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.deleted) {
+            const card = document.getElementById(`hcard-${pk}`);
+            card.style.transition = 'opacity .3s, transform .3s';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(.95)';
+            setTimeout(() => card.remove(), 300);
+        }
+    });
+}
+
+function toggleSteps(pk, btn) {
+    const ol = document.getElementById(`steps-${pk}`);
+    const expanded = ol.classList.toggle('expanded');
+    btn.textContent = expanded ? 'Show less ▲' : 'Show more ▼';
+}
+</script>
+{% endblock %}
